@@ -53,9 +53,8 @@ My journey in computer science has led me to develop a passion for cybersecurity
 </div>
 
 ## Projects
-- Detection Lab
+- Active Directory Home Lab
 - SOC Automation Project
-- SOAR EDR Integration
 - SOAR EDR Integration
 - Malware Analysis Lab
 - Basic Homelab
