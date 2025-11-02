@@ -1,0 +1,97 @@
+SOC Automation Project 2.0 with AI
+
+An automated security workflow that ingests Windows logs into Splunk, triages brute-force alerts with AI (ChatGPT), enriches IOCs, and delivers a full summary report to Slack.
+
+📖 Table of Contents
+
+About This Project
+
+Skills & Technologies Used
+
+Key Features
+
+Process Flow
+
+Challenges & What I Learned
+
+📖 About This Project
+
+In any Security Operations Center (SOC), analysts are often overwhelmed by a high volume of low-level alerts. This manual triage process is slow, repetitive, and can lead to analyst burnout and missed threats.
+
+This project solves that problem by building an automated pipeline. It uses a SIEM (Splunk) to detect a threat, a workflow engine (N8N) to "catch" the alert, an AI model (ChatGPT) to perform the initial investigation, and a chat app (Slack) to deliver the findings.
+
+This project serves as a practical demonstration of my skills in SIEM configuration, security automation, AI integration, threat intelligence, and virtual infrastructure.
+
+🛠️ Skills & Technologies Used
+
+SIEM & Log Management: Splunk Enterprise, Splunk Universal Forwarder
+
+Security Automation (SOAR):: N8N (Workflow Automation), OpenAI API (AI Triage), AbuseIPDB API (Threat Intel), Slack API (Notifications)
+
+Infrastructure & Virtualization: VMware Workstation, Docker, Docker Compose
+
+Operating Systems: Windows 10 Pro, Ubuntu Server 24.04
+
+✨ Key Features
+
+Log Ingestion: A Windows 10 VM is configured to send security event logs (like Event ID 4625, 4624, etc.) to a Splunk instance using the Splunk Universal Forwarder.
+
+SIEM Alerting: A custom brute-force detection alert is built in Splunk to trigger when multiple failed logins (Event ID 4625) occur.
+
+Webhook Automation: The Splunk alert triggers an N8N webhook, securely passing the alert data (source IP, username, host) to the automation workflow.
+
+AI-Powered Triage: ChatGPT is used to:
+
+Summarize the alert in plain English.
+
+Assess the severity based on the MITRE ATT&CK framework (T1110 - Brute Force).
+
+Provide clear, actionable recommendations for a Tier 1 analyst.
+
+Threat Intelligence Enrichment: The source IP address from the alert is automatically enriched using the AbuseIPDB API to check its reputation, confidence score, and known attack types.
+
+Slack Notification: A formatted report containing the summary, severity, enrichment data, and recommended actions is posted to a dedicated Slack channel for an analyst to review.
+
+⚙️ Process Flow
+
+The end-to-end process follows these steps:
+
+Detection: An attacker (or test script) generates multiple failed login attempts on the Windows 10 VM.
+
+Log Generation: The Windows OS records these attempts as Event ID 4625 (An account failed to log on) in the Security Event Log.
+
+Log Forwarding: The Splunk Universal Forwarder installed on the Windows VM detects the new event and forwards it in real-time to the Splunk instance.
+
+Ingestion & Alerting: The Splunk VM receives the log, indexes it, and our custom brute-force alert query identifies the pattern of multiple failed logins from a single source.
+
+Webhook Trigger: The Splunk alert fires, sending a JSON payload with the alert details (Source IP, username, hostname, etc.) to a unique N8N webhook URL.
+
+Workflow Automation: The N8N instance "caches" the webhook, starting the automation pipeline.
+
+Threat Intelligence: N8N extracts the src_ip from the alert data and makes an API call to AbuseIPDB to get its reputation, country of origin, and past malicious activity.
+
+AI Triage: N8N combines the original alert data with the new threat intel into a prompt for the OpenAI API (ChatGPT).
+
+Analysis & Reporting: ChatGPT analyzes the complete data and generates a structured report, including a summary, MITRE ATT&CK mapping, severity assessment, and recommended mitigation steps.
+
+Final Notification: N8N formats this report and posts it directly into the #alerts channel in Slack for an analyst to review.
+
+🧠 Challenges & What I Learned
+
+This project was a great learning experience in debugging a multi-part system.
+
+1. Unreachable N8N Container
+
+Challenge: After setting up N8N with Docker Compose, the service was unreachable (connection refused).
+
+Solution: By inspecting the Docker volume (ll), I saw the n8n-data directory was owned by root. The N8N container doesn't run as root and couldn't access its data. I fixed this by running sudo chown -R 1000:1000 n8n-data to change the directory ownership to the correct non-root user (1000), allowing the container to start properly.
+
+What I Learned: This taught me the critical importance of file permissions for Docker volumes and how to debug container startup failures by checking user/group ownership.
+
+2. Incorrect Splunk Alert Count
+
+Challenge: My Splunk alert for brute force attacks was only showing a count of 1, even after I generated five failed logins.
+
+Solution: I realized my Splunk query (stats count by _time, computer, user...) was splitting the results by timestamp. Because each login had a unique timestamp, they weren't being grouped. I fixed the query by removing _time from the stats command, which correctly aggregated all five events into a single alert with count=5.
+
+What I Learned: This deepened my understanding of Splunk's Search Processing Language (SPL) and how aggregation commands like stats are heavily influenced by the fields you choose to group by.
